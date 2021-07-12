@@ -6,7 +6,9 @@ import 'package:borecord/utility/my_dialog.dart';
 import 'package:borecord/widgets/show_image.dart';
 import 'package:borecord/widgets/show_title.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Authen extends StatefulWidget {
@@ -21,6 +23,70 @@ class _AuthenState extends State<Authen> {
   final formKey = GlobalKey<FormState>();
   TextEditingController userController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
+
+  FlutterLocalNotificationsPlugin flutterLocalNotificationPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  AndroidInitializationSettings? androidInitializationSettings;
+
+  IOSInitializationSettings? iosInitializationSettings;
+
+  InitializationSettings? initializationSettings;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    initializing();
+  }
+
+  Future<Null> initializing() async {
+    androidInitializationSettings = AndroidInitializationSettings('noti2');
+    iosInitializationSettings = IOSInitializationSettings(
+      onDidReceiveLocalNotification: (id, title, body, payload) =>
+          onDisReceiveLocalNotification(id, 'title', body, payload),
+    );
+    initializationSettings =
+        InitializationSettings(android: androidInitializationSettings);
+    await flutterLocalNotificationPlugin.initialize(initializationSettings!);
+  }
+
+  Future onSelectNotification(String? payLoad) async {
+    if (payLoad != null) {
+      print('onSelectNotification Workd payload ==> $payLoad');
+    }
+  }
+
+  Future<dynamic> onDisReceiveLocalNotification(
+      int id, String title, String? body, String? payload) async {
+    return CupertinoAlertDialog(
+      title: Text(title),
+      content: Text(body!),
+      actions: [
+        CupertinoDialogAction(
+          isDefaultAction: true,
+          onPressed: () => print('CupertioAction OK'),
+          child: Text('OK'),
+        )
+      ],
+    );
+  }
+
+  Future<Null> processNotification() async {
+    AndroidNotificationDetails androidNotificationDetails =
+        AndroidNotificationDetails(
+      'idAndroid',
+      'channelName',
+      'channelDescription',
+      priority: Priority.high,
+      importance: Importance.max,
+    );
+
+    NotificationDetails notificationDetails =
+        NotificationDetails(android: androidNotificationDetails);
+    await flutterLocalNotificationPlugin.show(0, 'Notification มาสเตอร์',
+        'ทดสอบ โดย มาสเตอร์ อึ่ง', notificationDetails);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +107,9 @@ class _AuthenState extends State<Authen> {
                     buildUser(constraints),
                     buildPassword(constraints),
                     buildLogin(constraints),
+                    TextButton(
+                        onPressed: () => processNotification(),
+                        child: Text('Local Notification'))
                   ],
                 ),
               ),
