@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:borecord/bodys/information.dart';
 import 'package:borecord/bodys/list_task.dart';
 import 'package:borecord/bodys/search_task.dart';
+import 'package:borecord/models/user_model.dart';
 import 'package:borecord/utility/my_constant.dart';
 import 'package:borecord/widgets/show_image.dart';
 import 'package:borecord/widgets/show_title.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -15,7 +19,7 @@ class ServiceApp extends StatefulWidget {
 }
 
 class _ServiceAppState extends State<ServiceApp> {
-  String? nameLogin;
+  String? nameLogin, nameLoginOnHeader;
   List<Widget> widgets = [
     ListTask(),
     Information(),
@@ -33,8 +37,18 @@ class _ServiceAppState extends State<ServiceApp> {
   Future<Null> findData() async {
     SharedPreferences preferences = await SharedPreferences.getInstance();
     List<String>? data = preferences.getStringList('data');
-    setState(() {
-      nameLogin = data![1];
+
+    String apiCheckAuthen =
+        '${MyConstant.domain}/borecord/getUserWhereUser.php?isAdd=true&user=${data![2]}';
+
+    await Dio().get(apiCheckAuthen).then((value) {
+      for (var item in json.decode(value.data)) {
+        UserModel model = UserModel.fromMap(item);
+        setState(() {
+          nameLogin = data[1];
+          nameLoginOnHeader = model.name;
+        });
+      }
     });
   }
 
@@ -51,7 +65,8 @@ class _ServiceAppState extends State<ServiceApp> {
               buildSignOut(),
               Column(
                 children: [
-                  buildHeader(),
+                  // buildHeader(),
+                  drawerHeader(),
                   menuListTask(),
                   menuInformaiton(),
                   menuInSearchTask(),
@@ -119,6 +134,18 @@ class _ServiceAppState extends State<ServiceApp> {
       currentAccountPicture: ShowImage(path: MyConstant.image3),
     );
   }
+
+  DrawerHeader drawerHeader() => DrawerHeader(
+          child: Column(
+        children: [
+          Container(
+            width: 100,
+            height: 100,
+            child: ShowImage(path: MyConstant.image1),
+          ),
+          Text('Name => $nameLoginOnHeader'),
+        ],
+      ));
 
   Column buildSignOut() {
     return Column(
